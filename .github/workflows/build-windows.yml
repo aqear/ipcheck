@@ -33,3 +33,4 @@ jobs:
           name: IPChecker-Windows
           path: dist/IPChecker.exe
           retention-days: 30
+
