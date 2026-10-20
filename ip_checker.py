@@ -127,7 +127,7 @@ class CheckWorker(QObject):
 class MainWindow(QMainWindow):
     def __init__(self):
         super().__init__()
-        self.setWindowTitle("IP 批量查询工具 · 桌面版")
+        self.setWindowTitle("服务器占用情况查询")
         self.resize(1280, 780)
 
         self.worker = None
@@ -145,14 +145,9 @@ class MainWindow(QMainWindow):
         root.setSpacing(12)
 
         # ==== 顶部标题 ====
-        title = QLabel("🌐 IP 批量查询 · URL 后缀拼接")
+        title = QLabel("服务器占用情况查询")
         title.setStyleSheet("font-size: 20px; font-weight: 600; color: #0b1b33;")
         root.addWidget(title)
-
-        sub = QLabel("桌面程序 · 无CORS限制 · 并发请求 · 表格展示 · CSV导出")
-        sub.setStyleSheet("color:#4a5c6f; padding:6px 10px; background:#f0f7ff;"
-                          "border-left:4px solid #3b82f6; border-radius:0 8px 8px 0;")
-        root.addWidget(sub)
 
         # ==== 配置区 ====
         cfg = QGroupBox("配置")
@@ -163,8 +158,8 @@ class MainWindow(QMainWindow):
 
         # 基础URL
         url_row = QHBoxLayout()
-        url_row.addWidget(QLabel("基础URL:"))
-        self.base_url_edit = QLineEdit("http://localhost:8080/api/ip/")
+        url_row.addWidget(QLabel("查询服务器地址:"))
+        self.base_url_edit = QLineEdit("http://80.170.254.3:9080/")
         self.base_url_edit.setPlaceholderText("例如 http://localhost:8080/api/ip/")
         self.base_url_edit.setStyleSheet("padding:6px 10px; border:1.5px solid #dbe2eb;"
                                          "border-radius:8px; font-family: Consolas, monospace;")
@@ -195,20 +190,20 @@ class MainWindow(QMainWindow):
 
         opt_row.addStretch(1)
 
-        self.btn_start = QPushButton("🔍 开始查询")
+        self.btn_start = QPushButton("开始查询")
         self.btn_start.setStyleSheet(self._btn_style("#1e3a8a", "white"))
         self.btn_start.clicked.connect(self.on_start)
 
-        self.btn_stop = QPushButton("⏹️ 停止")
+        self.btn_stop = QPushButton("停止")
         self.btn_stop.setStyleSheet(self._btn_style("#b45309", "white"))
         self.btn_stop.setEnabled(False)
         self.btn_stop.clicked.connect(self.on_stop)
 
-        self.btn_sample = QPushButton("📋 示例")
+        self.btn_sample = QPushButton("示例")
         self.btn_sample.setStyleSheet(self._btn_style("#ffffff", "#1e2f44"))
         self.btn_sample.clicked.connect(self.on_sample)
 
-        self.btn_clear = QPushButton("🗑️ 清空")
+        self.btn_clear = QPushButton("清空")
         self.btn_clear.setStyleSheet(self._btn_style("#ffffff", "#1e2f44"))
         self.btn_clear.clicked.connect(self.on_clear)
 
@@ -225,12 +220,12 @@ class MainWindow(QMainWindow):
         splitter.setChildrenCollapsible(False)
 
         # 输入区
-        input_box = QGroupBox("后缀 / IP 列表（每行一个，会拼接到基础URL后面）")
+        input_box = QGroupBox("服务器地址信息")
         input_box.setStyleSheet("QGroupBox{font-weight:600; color:#1e2f44; border:1px solid #e2e9f2;"
                                 "border-radius:10px; margin-top:8px; padding-top:14px;}")
         in_lay = QVBoxLayout(input_box)
         self.ip_edit = QTextEdit()
-        self.ip_edit.setPlaceholderText("每行一个，例如:\n8.8.8.8\n1.1.1.1\n114.114.114.114\nexample.com")
+        self.ip_edit.setPlaceholderText("每行一个，例如:8.8.8.8")
         self.ip_edit.setStyleSheet("font-family: Consolas, monospace; font-size: 13px;"
                                    "border:1.5px solid #dbe2eb; border-radius:8px; padding:8px;")
         self.ip_edit.setFixedHeight(140)
@@ -257,7 +252,7 @@ class MainWindow(QMainWindow):
         top_row.addWidget(self.lbl_status)
         top_row.addStretch(1)
 
-        self.btn_export = QPushButton("⬇️ 导出 CSV")
+        self.btn_export = QPushButton("导出 CSV")
         self.btn_export.setStyleSheet(self._btn_style("#0e7c4a", "white"))
         self.btn_export.setEnabled(False)
         self.btn_export.clicked.connect(self.on_export)
@@ -276,7 +271,7 @@ class MainWindow(QMainWindow):
 
         # 表格
         self.table = QTableWidget(0, 6)
-        self.table.setHorizontalHeaderLabels(["#", "后缀/IP", "完整URL", "HTTP状态", "耗时", "响应内容"])
+        self.table.setHorizontalHeaderLabels(["序号", "服务器IP", "完整URL", "HTTP状态", "耗时", "结果"])
         self.table.setStyleSheet(
             "QTableWidget{border:1px solid #e2e9f2; border-radius:8px; gridline-color:#ecf1f8;}"
             "QHeaderView::section{background:#f2f6fc; padding:6px; border:none;"
@@ -301,11 +296,6 @@ class MainWindow(QMainWindow):
         root.addWidget(splitter, 1)
 
         # 底部说明
-        foot = QLabel("说明：每行内容会作为后缀拼接到基础URL发起 GET 请求。SSL 校验默认关闭，"
-                      "若需严格校验请勾选。桌面程序无浏览器 CORS 限制。")
-        foot.setStyleSheet("color:#6b7d99; font-size:12px;")
-        foot.setWordWrap(True)
-        root.addWidget(foot)
 
     def _btn_style(self, bg, fg):
         return (f"QPushButton{{background:{bg}; color:{fg}; border:1px solid #cddae9;"
@@ -448,7 +438,7 @@ class MainWindow(QMainWindow):
         try:
             with open(path, "w", newline="", encoding="utf-8-sig") as f:
                 w = csv.writer(f)
-                w.writerow(["序号", "后缀/IP", "完整URL", "HTTP状态", "耗时", "响应内容"])
+                w.writerow(["序号", "服务器ip", "完整URL", "HTTP状态", "耗时", "结果"])
                 for i, r in enumerate(self.results, 1):
                     w.writerow([i, r["suffix"], r["url"], r["status"],
                                 r["elapsed"], r["body"]])
